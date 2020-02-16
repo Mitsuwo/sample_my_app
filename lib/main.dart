@@ -1,16 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(App());
 
-class MyApp extends StatelessWidget {
+
+class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    return Provider<TextModel>(
+      create: (_) => TextModel(),
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: TextList()
+      )
+    );
+  }
+}
+
+class TextList extends StatefulWidget {
+  @override
+  createState() => TextListState();
+}
+
+class TextListState extends State<TextList> {
+  void pushFormPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FormPage()),
+    );
+  }
+
+  Widget buildTextList() {
+    final textModel = Provider.of<TextModel>(context);
+    final _textItems = textModel.getTextItems();
+    return ListView.builder(
+      itemBuilder: (BuildContext context, int index) {
+        return buildTextItem(_textItems[index]);
+      },
+      itemCount: _textItems.length,
+    );
+  }
+
+  Widget buildTextItem(String text) {
+    return Text("Added Text is: $text");
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Todo List')
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      body: buildTextList(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: pushFormPage, // _addTodoItem,
+        tooltip: 'Add task',
+        child: Icon(Icons.add)
+      ),
     );
   }
 }
@@ -34,6 +83,12 @@ class MyCustomForm extends StatefulWidget {
 
 class MyCustomFormState extends State<MyCustomForm> {
   final _formKey = GlobalKey<FormState>();
+  String text;
+
+  void handleAdd(value) {
+    Provider.of<TextModel>(context).setTextItems(value);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -48,14 +103,19 @@ class MyCustomFormState extends State<MyCustomForm> {
               }
               return null;
             },
+            onSaved: (String value) {
+              handleAdd(value);
+            },
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: RaisedButton(
               onPressed: () {
-                if (_formKey.currentState.validate()) {
-                  Scaffold.of(context)
-                      .showSnackBar(SnackBar(content: Text('Processing Data')));
+                if (!_formKey.currentState.validate()) {
+                  print('Form is not valid!  Please review and correct.');
+                } else {
+                  _formKey.currentState.save();
+                  Navigator.pop(context);
                 }
               },
               child: Text('Submit'),
@@ -67,33 +127,10 @@ class MyCustomFormState extends State<MyCustomForm> {
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-  final String title;
-  @override
-  HomeState createState() => HomeState();
-}
-
-class HomeState extends State<MyHomePage> {
-  void pushFormPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => FormPage()),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: RaisedButton(
-              child: Text('GO TO FORM'),
-              onPressed: pushFormPage,
-        )
-      ),
-    );
+class TextModel {
+  List<String> _textItems = [];
+  getTextItems() => _textItems;
+  setTextItems(String text) {
+    _textItems.add(text);
   }
 }
